@@ -145,8 +145,22 @@ func createMultipartHeader(param, fileName, contentType string) textproto.MIMEHe
 	return hdr
 }
 
+func createMultipartHeaderNoFilename(param, contentType string) textproto.MIMEHeader {
+	hdr := make(textproto.MIMEHeader)
+	hdr.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"`,
+		escapeQuotes(param)))
+	hdr.Set("Content-Type", contentType)
+	return hdr
+}
+
 func addMultipartFormField(w *multipart.Writer, mf *multipartField) error {
-	partWriter, err := w.CreatePart(createMultipartHeader(mf.Param, mf.FileName, mf.ContentType))
+	var hdr textproto.MIMEHeader
+	if mf.FileName != "" {
+		hdr = createMultipartHeader(mf.Param, mf.FileName, mf.ContentType)
+	} else {
+		hdr = createMultipartHeaderNoFilename(mf.Param, mf.ContentType)
+	}
+	partWriter, err := w.CreatePart(hdr)
 	if err != nil {
 		return err
 	}
